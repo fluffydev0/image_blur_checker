@@ -34,7 +34,7 @@ dependencies:
   cupertino_icons: ^1.0.8
   permission_handler: ^11.3.1
   image: ^4.1.7
-  detector_blur_image: ^0.0.1
+  detector_blur_image: ^0.1.0
 
 dev_dependencies:
   flutter_test:

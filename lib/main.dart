@@ -2,7 +2,6 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:detector_blur_image/blur_detector.dart';
-import 'package:permission_handler/permission_handler.dart';
 
 void main() {
   runApp(const MyApp());
@@ -37,32 +36,7 @@ class _ImagePickerScreenState extends State<ImagePickerScreen> {
   bool? _isBlurry;
   final ImagePicker _picker = ImagePicker();
 
-  Future<bool> _requestPermission(bool isCamera) async {
-    final status = isCamera
-        ? await Permission.camera.request()
-        : await Permission.photos.request();
-
-    if (status.isGranted) {
-      return true;
-    } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-              '${isCamera ? 'Camera' : 'Photo library'} permission is required to ${isCamera ? 'take' : 'select'} photos'),
-          action: SnackBarAction(
-            label: 'Settings',
-            onPressed: () => openAppSettings(),
-          ),
-        ),
-      );
-      return false;
-    }
-  }
-
   Future<void> _pickImage({required bool fromCamera}) async {
-    final hasPermission = await _requestPermission(fromCamera);
-    if (!hasPermission) return;
-
     final XFile? pickedFile = fromCamera
         ? await _picker.pickImage(source: ImageSource.camera)
         : await _picker.pickImage(source: ImageSource.gallery);
@@ -91,7 +65,7 @@ class _ImagePickerScreenState extends State<ImagePickerScreen> {
           _isLoading = false;
         });
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error detecting blur: ${e.toString()}')),
+          SnackBar(content: Text('Error detecting blur: e.toString()}')),
         );
       }
     }
