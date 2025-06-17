@@ -75,7 +75,7 @@ Future<List<List<List<double>>>> preprocess(File imageFile) async {
   final resized = img.copyResize(image, width: 224, height: 224);
 
   return List.generate(224, (y) {
-    return List.generate(224, (x) {
+    return List.generate(224, (x) { 
       final pixel = resized.getPixel(x, y);
       // final int pixelValue = pixel is int ? pixel : pixel.toInt();
       final int pixelValue = pixel as int;
