@@ -1,7 +1,8 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:blur_detection/blur_detection.dart';
+import 'package:blur_detection/blur_detection.dart' as original_blur;
+import 'services/blur_detection_service.dart';
 
 void main() {
   runApp(const MyApp());
@@ -34,28 +35,35 @@ class _ImagePickerScreenState extends State<ImagePickerScreen> {
   File? _image;
   bool _isLoading = false;
   bool? _isBlurry;
+  BlurResult? _blurResult;
   final ImagePicker _picker = ImagePicker();
 
   Future<void> _pickImage({required bool fromCamera}) async {
     final XFile? pickedFile = fromCamera
         ? await _picker.pickImage(source: ImageSource.camera)
-        : await _picker.pickImage(source: ImageSource.gallery);
+        :await _picker.pickImage(source: ImageSource.gallery);
 
     if (pickedFile != null) {
       setState(() {
         _isLoading = true;
         _isBlurry = null;
+        _blurResult = null;
       });
 
       final file = File(pickedFile.path);
-      
+
       try {
-        // Using blur_detection package
-        final isBlurry = await BlurDetectionService.isImageBlurred(file);
-        
+        // Using the new blur detection service
+        final blurResult = await BlurDetectionService.analyzeImage(file);
+
+        // Also get the original boolean result for comparison
+        final isBlurry =
+            await original_blur.BlurDetectionService.isImageBlurred(file);
+
         setState(() {
           _image = file;
           _isBlurry = isBlurry;
+          _blurResult = blurResult;
           _isLoading = false;
         });
       } catch (e) {
@@ -107,25 +115,67 @@ class _ImagePickerScreenState extends State<ImagePickerScreen> {
           Expanded(
             child: Image.file(_image!),
           ),
-          if (_isBlurry != null)
+          if (_blurResult != null)
             Container(
               padding: const EdgeInsets.all(16.0),
-              color: _isBlurry! ? Colors.red.shade100 : Colors.green.shade100,
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
+              color: _blurResult!.isBlurry
+                  ? Colors.red.shade100
+                  : Colors.green.shade100,
+              child: Column(
                 children: [
-                  Icon(
-                    _isBlurry! ? Icons.blur_on : Icons.blur_off,
-                    color: _isBlurry! ? Colors.red : Colors.green,
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(
+                        _blurResult!.isBlurry ? Icons.blur_on : Icons.blur_off,
+                        color:
+                            _blurResult!.isBlurry ? Colors.red : Colors.green,
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        _blurResult!.isBlurry
+                            ? 'Image is Blurry'
+                            : 'Image is Sharp',
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                          color:
+                              _blurResult!.isBlurry ? Colors.red : Colors.green,
+                        ),
+                      ),
+                    ],
                   ),
-                  const SizedBox(width: 8),
-                  Text(
-                    _isBlurry! ? 'Image is Blurry' : 'Image is Sharp',
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                      color: _isBlurry! ? Colors.red : Colors.green,
-                    ),
+                  const SizedBox(height: 12),
+                  // Percentage display
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                    children: [
+                      _buildPercentageCard(
+                        'Blur',
+                        _blurResult!.blurPercentage,
+                        Colors.red,
+                        Icons.blur_on,
+                      ),
+                      _buildPercentageCard(
+                        'Sharpness',
+                        _blurResult!.sharpnessPercentage,
+                        Colors.green,
+                        Icons.blur_off,
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  // Detailed metrics
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                    children: [
+                      _buildMetricCard(
+                          'Laplacian', _blurResult!.laplacianScore),
+                      _buildMetricCard(
+                          'Frequency', _blurResult!.frequencyScore),
+                      _buildMetricCard(
+                          'Brightness', _blurResult!.brightnessScore),
+                    ],
                   ),
                 ],
               ),
@@ -133,6 +183,61 @@ class _ImagePickerScreenState extends State<ImagePickerScreen> {
         ],
       );
     }
+  }
+
+  Widget _buildPercentageCard(
+      String label, double percentage, Color color, IconData icon) {
+    return Container(
+      padding: const EdgeInsets.all(8),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: color.withOpacity(0.3)),
+      ),
+      child: Column(
+        children: [
+          Icon(icon, color: color, size: 20),
+          const SizedBox(height: 4),
+          Text(
+            label,
+            style: TextStyle(fontSize: 12, color: color),
+          ),
+          Text(
+            '${percentage.toStringAsFixed(1)}%',
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+              color: color,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildMetricCard(String label, double value) {
+    return Container(
+      padding: const EdgeInsets.all(6),
+      decoration: BoxDecoration(
+        color: Colors.grey.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(6),
+      ),
+      child: Column(
+        children: [
+          Text(
+            label,
+            style: const TextStyle(fontSize: 10, color: Colors.grey),
+          ),
+          Text(
+            value.toStringAsFixed(1),
+            style: const TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
   @override
