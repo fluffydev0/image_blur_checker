@@ -41,7 +41,7 @@ class _ImagePickerScreenState extends State<ImagePickerScreen> {
   Future<void> _pickImage({required bool fromCamera}) async {
     final XFile? pickedFile = fromCamera
         ? await _picker.pickImage(source: ImageSource.camera)
-        :await _picker.pickImage(source: ImageSource.gallery);
+        : await _picker.pickImage(source: ImageSource.gallery);
 
     if (pickedFile != null) {
       setState(() {
@@ -165,16 +165,12 @@ class _ImagePickerScreenState extends State<ImagePickerScreen> {
                     ],
                   ),
                   const SizedBox(height: 8),
-                  // Detailed metrics
+                  // Laplacian metric
                   Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                    mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       _buildMetricCard(
-                          'Laplacian', _blurResult!.laplacianScore),
-                      _buildMetricCard(
-                          'Frequency', _blurResult!.frequencyScore),
-                      _buildMetricCard(
-                          'Brightness', _blurResult!.brightnessScore),
+                          'Laplacian Variance', _blurResult!.laplacianScore),
                     ],
                   ),
                 ],
